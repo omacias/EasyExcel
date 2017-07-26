@@ -6,6 +6,7 @@
 package com.salvador.easyexcel.filegenerator;
 
 import com.salvador.easyexcel.annotations.Header;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -27,7 +28,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
  * @author Oscar Salvador Macias Tiscareño
  * @param <T>
  */
-public class Generator<T> {
+public class Generator<T> implements Closeable{
     
     /**
      * bufferRows define the quantity of rows that keep in memory before to save into file
@@ -55,6 +56,36 @@ public class Generator<T> {
      */
     private final List<CellStyle> rowsCellStyle;
     
+    /**
+     * file, the excel file
+     */
+    private File file;
+    
+    /**
+     * streamOut, the file stream
+     */
+    private FileOutputStream streamOut;
+    
+    /**
+     * streamWorkbook
+     */
+    private SXSSFWorkbook streamWorkbook;
+    
+    /**
+     * sheetNumber
+     */
+    private int sheetNumber = 1;
+    
+    /**
+     * indexRow
+     */
+    private int indexRow = 0;
+    
+    /**
+     * currentSheet
+     */
+    private Sheet currentSheet;
+    
     private Generator() {
         this.bufferRows = Constants.DEFAULT_BUFFER_ROWS;
         this.keepWritingAtNextSheet = Constants.DEFAULT_KEEP_WRITING_SHEET;
@@ -66,43 +97,33 @@ public class Generator<T> {
     /**
      * This method takes a List and saves it into an excel file
      * @param list of type List
-     * @return excel File
-     * @throws FileNotFoundException
      * @throws IllegalAccessException
-     * @throws IOException 
      */
-    public File createExcelFile(List<T> list) throws FileNotFoundException, IllegalAccessException, IOException {
-        String fileName = UUID.randomUUID().toString();
-        File file = new File(this.path + "\\" + fileName + Constants.EXCEL_EXT);
-        if(list != null && list.size() > 0 && list.get(0) != null) {         
-            try (FileOutputStream streamOut = new FileOutputStream(file)) {
-                SXSSFWorkbook streamWorkbook = new SXSSFWorkbook(this.bufferRows);
-                Sheet currentSheet = streamWorkbook.createSheet(this.sheetName);
-                int sheetNumber = 1;
-                int indexRow = 0;
-                Row headerRow = currentSheet.createRow(indexRow++);
+    public void write(List<T> list) throws IllegalAccessException {        
+        if(list != null && list.size() > 0 && list.get(0) != null) {
+            Row headerRow;
+            if(indexRow == 0) {
+                headerRow = currentSheet.createRow(indexRow++);
                 addHeaderRow(list.get(0), headerRow, streamWorkbook);
-                for (T t : list) {
-                    if(indexRow > Constants.EXCEL_MAX_SHEET_ROWS) {
-                        if(this.keepWritingAtNextSheet) {
-                            Formatter.adjustSheet(currentSheet, list.get(0));
-                            //continue writing on the next sheet
-                            currentSheet = streamWorkbook.createSheet(this.sheetName + sheetNumber++);
-                            indexRow = 0;
-                            headerRow = currentSheet.createRow(indexRow++);
-                            addHeaderRow(list.get(0), headerRow, streamWorkbook);
-                        }else{
-                            break;
-                        }                     
-                    }                    
-                    Row row = currentSheet.createRow(indexRow++);
-                    fillRow(t, row, streamWorkbook);
-                }
-                Formatter.adjustSheet(currentSheet, list.get(0));
-                streamWorkbook.write(streamOut);
+            }            
+            for (T t : list) {
+                if(indexRow > Constants.EXCEL_MAX_SHEET_ROWS) {
+                    if(this.keepWritingAtNextSheet) {
+                        Formatter.adjustSheet(currentSheet, list.get(0));
+                        //continue writing on the next sheet
+                        currentSheet = streamWorkbook.createSheet(this.sheetName + sheetNumber++);
+                        indexRow = 0;
+                        headerRow = currentSheet.createRow(indexRow++);
+                        addHeaderRow(list.get(0), headerRow, streamWorkbook);
+                    }else{
+                        break;
+                    }                     
+                }                    
+                Row row = currentSheet.createRow(indexRow++);
+                fillRow(t, row, streamWorkbook);
             }
-        }
-        return file;        
+            Formatter.adjustSheet(currentSheet, list.get(0));            
+        }    
     }    
     
     private void fillRow(T t, Row row, Workbook wb) throws IllegalAccessException {
@@ -187,10 +208,26 @@ public class Generator<T> {
     }
     
     /**
-     * Class to build Generator instance
-     * @param <K> 
+     * flush()
+     * @return flush rows to file, and returns excel file
+     * @throws java.io.IOException
      */
-    public static class Build<K> implements Builder<Generator> {
+    public File flush() throws IOException {
+        streamWorkbook.write(this.streamOut);
+        return file;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if(this.streamOut != null) {
+            this.streamOut.close();
+        }
+    }
+    
+    /**
+     * Class to build Generator instance
+     */
+    public static class Build implements Builder<Generator> {
         
         /**
         * bufferRows define the quantity of rows that keep in memory before to save into file
@@ -264,10 +301,12 @@ public class Generator<T> {
 
         /**
          * build()
+         * @param <K>
          * @return Generator instance 
+         * @throws java.io.FileNotFoundException 
          */
         @Override
-        public Generator build() {
+        public <K> Generator<K> build() throws FileNotFoundException {
             Generator<K> generator = new Generator<>();
             if(this.bufferRows != null) {
                 generator.bufferRows = this.bufferRows;
@@ -281,6 +320,14 @@ public class Generator<T> {
             if(this.path != null) {
                 generator.path = this.path;
             }
+            
+            String fileName = UUID.randomUUID().toString();
+            generator.file = new File(this.path + "\\" + fileName + Constants.EXCEL_EXT);
+            
+            generator.streamOut = new FileOutputStream(generator.file);
+            
+            generator.streamWorkbook = new SXSSFWorkbook(generator.bufferRows);
+            generator.currentSheet = generator.streamWorkbook.createSheet(generator.sheetName); 
             
             return generator;
         }        

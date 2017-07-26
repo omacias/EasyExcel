@@ -5,6 +5,8 @@
  */
 package com.salvador.easyexcel.filegenerator;
 
+import java.io.FileNotFoundException;
+
 /**
  * Builder interface
  * @author Oscar Salvador Macias Tiscareño
@@ -16,5 +18,5 @@ interface Builder<T> {
      * build
      * @return T
      */
-    T build();
+    <K> T build() throws FileNotFoundException;
 }
