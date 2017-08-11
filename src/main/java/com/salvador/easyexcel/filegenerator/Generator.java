@@ -99,7 +99,7 @@ public class Generator<T> implements Closeable{
      * @param list of type List
      * @throws IllegalAccessException
      */
-    public void write(List<T> list) throws IllegalAccessException {        
+    public void addRows(List<T> list) throws IllegalAccessException {        
         if(list != null && list.size() > 0 && list.get(0) != null) {
             Row headerRow;
             if(indexRow == 0) {
@@ -212,7 +212,7 @@ public class Generator<T> implements Closeable{
      * @return flush rows to file, and returns excel file
      * @throws java.io.IOException
      */
-    public File flush() throws IOException {
+    public File writeToFile() throws IOException {
         streamWorkbook.write(this.streamOut);
         return file;
     }

@@ -27,21 +27,21 @@ public class TestGenerator {
         
         Person person = new Person("Oscar", 26, null);    
         List<Person> list = new ArrayList<>();
-        for (int i = 0; i < 524_288; i++) {
+        for (int i = 0; i < 44_288; i++) {
             list.add(person);
         }
         Build builder = new Generator.Build().setPath("E:\\temp").setBufferRows(200).setSheetName("Prueba").setKeepWritingAtNextSheet(true);
         try(Generator<Person> gen = builder.<Person>build()) {            
             System.out.println("Starting excel generation...");
             System.out.println("Writing first group");
-            gen.write(list);
+            gen.addRows(list);
             System.out.println("Writing second group");
-            gen.write(list);
+            gen.addRows(list);
             System.out.println("Writing third group");
-            gen.write(list);
+            gen.addRows(list);
             System.out.println("Writing fourth group");
-            gen.write(list);
-            File file = gen.flush();
+            gen.addRows(list);
+            File file = gen.writeToFile();
             System.out.println(file.getName() + " " + (file.length() / 1024) + " Kb");
             System.out.println(gen.getBufferRows() + " " + gen.getSheetName() + " " + gen.isKeepWritingAtNextSheet() + " " + gen.getPath());
             
