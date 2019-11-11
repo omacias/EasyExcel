@@ -45,7 +45,6 @@ public class Person {
     
     @Header(title = "Activo", style = TextStyle.BOLD, backgroundColor = Colors.AQUA)
     @Row(backgroundColor = Colors.WHITE, style = TextStyle.NORMAL)
-    @Exclude
     private boolean active;
 
     public String getName() {

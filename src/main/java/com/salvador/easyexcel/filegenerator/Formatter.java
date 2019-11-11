@@ -7,6 +7,7 @@ package com.salvador.easyexcel.filegenerator;
 
 import com.salvador.easyexcel.annotations.Exclude;
 import com.salvador.easyexcel.annotations.Header;
+import com.salvador.easyexcel.annotations.Row;
 import com.salvador.easyexcel.enums.Colors;
 import com.salvador.easyexcel.enums.TextStyle;
 import java.lang.reflect.Field;
@@ -144,6 +145,6 @@ class Formatter {
     }
     
     static <T> boolean excludeColumn(Field f, T t) {
-        return f.isAnnotationPresent(Exclude.class);
+        return (f.isAnnotationPresent(Exclude.class) || !f.isAnnotationPresent(Header.class) || !f.isAnnotationPresent(Row.class));
     }
 }
